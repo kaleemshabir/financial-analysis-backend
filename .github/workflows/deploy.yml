@@ -48,7 +48,7 @@ jobs:
             aws apprunner create-service \
               --service-name $SERVICE_NAME \
               --source-configuration file://source-config.json \
-              --instance-configuration Cpu=1vCPU,Memory=2GB
+              --instance-configuration Cpu=1024,Memory=2048
           else
             echo "Updating App Runner service..."
             aws apprunner update-service \
