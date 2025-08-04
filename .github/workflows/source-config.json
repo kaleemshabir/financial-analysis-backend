@@ -1,0 +1,11 @@
+{
+    "ImageRepository": {
+      "ImageIdentifier": "123456789012.dkr.ecr.eu-central-1.amazonaws.com/fastapi-apprunner:latest",
+      "ImageRepositoryType": "ECR",
+      "ImageConfiguration": {
+        "Port": "8000"
+      }
+    },
+    "AutoDeploymentsEnabled": true
+  }
+  
