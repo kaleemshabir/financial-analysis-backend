@@ -6,6 +6,8 @@
         "Port": "8000"
       }
     },
-    "AutoDeploymentsEnabled": true
+    "AuthenticationConfiguration": {
+        "AccessRoleArn": "arn:aws:iam::secrets.AWS_ACCOUNT_ID:role/AppRunnerECRAccessRole"
+      }
   }
   
