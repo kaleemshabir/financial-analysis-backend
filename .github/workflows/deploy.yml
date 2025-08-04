@@ -32,7 +32,7 @@ jobs:
       - name: Substitute image URI in source config
         run: |
           export IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/fastapi-apprunner:latest
-          envsubst < .github/app_runner/source-config.json > source-config.json
+          envsubst < .github/workflows/source-config.json > source-config.json
 
       - name: Deploy to App Runner
         run: |
