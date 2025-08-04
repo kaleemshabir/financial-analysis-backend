@@ -1,0 +1,62 @@
+name: Deploy to AWS App Runner
+
+on:
+  push:
+    branches:
+      - main  # or master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Push image to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image
+        run: |
+          REPO_NAME=fastapi-apprunner
+          IMAGE_TAG=latest
+
+          aws ecr describe-repositories --repository-names $REPO_NAME || \
+          aws ecr create-repository --repository-name $REPO_NAME
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REGION=${{ secrets.AWS_REGION }}
+          IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
+
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+
+      - name: Deploy to App Runner
+        run: |
+          SERVICE_NAME=fastapi-apprunner
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REGION=${{ secrets.AWS_REGION }}
+          IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/fastapi-apprunner:latest
+
+          SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" --output text)
+
+          if [ -z "$SERVICE_ARN" ]; then
+            echo "Creating App Runner service..."
+            aws apprunner create-service \
+              --service-name $SERVICE_NAME \
+              --source-configuration ImageRepositoryType="ECR",ImageRepository={"ImageIdentifier=\"$IMAGE_URI\"",ImageRepositoryType="ECR"},AutoDeploymentsEnabled=true \
+              --instance-configuration Cpu=1 vCpu,Memory=2 GB
+          else
+            echo "Updating App Runner service..."
+            aws apprunner update-service \
+              --service-arn $SERVICE_ARN \
+              --source-configuration ImageRepositoryType="ECR",ImageRepository={"ImageIdentifier=\"$IMAGE_URI\"",ImageRepositoryType="ECR"},AutoDeploymentsEnabled=true
+          fi
